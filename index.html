@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Garagem F1</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- HUD -->
+  <header class="hud" role="banner" aria-label="Painel do jogador">
+    <div class="hud__left">
+      <section class="stat stat--money" aria-label="Dinheiro">
+        <div class="stat__header"><div class="stat__label">💰 Dinheiro</div></div>
+        <div class="stat__value" id="money">R$ 0,00</div>
+      </section>
+      <section class="stat stat--energy" aria-label="Energia">
+        <div class="stat__header"><div class="stat__label">🔋 Energia</div></div>
+        <div class="stat__value" id="energy">0</div>
+        <div class="stat__meter" aria-label="Medidor de energia">
+          <div id="energyMeter" class="energy-meter" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"></div>
+        </div>
+      </section>
+    </div>
+    <div class="hud__right">
+      <section class="stat stat--day" aria-label="Dia">
+        <div class="stat__header"><div class="stat__label">📅 Dia</div></div>
+        <div class="stat__value" id="day">1/30</div>
+      </section>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button id="rulesBtn" class="btn">❓ Regras</button>
+        <button id="newGameBtn" class="btn btn--primary">🔁 Novo jogo</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="dayToast" class="day-toast" hidden>Dia 1 → 2</div>
+
+  <main class="app-container">
+    <section class="game-area" aria-label="Garagem F1">
+      <canvas id="scene" width="512" height="288" aria-label="Cena da garagem"></canvas>
+      <div id="interactTip" class="interact-tip" hidden>Pressione <b>E</b> para <b>inspecionar o carro</b></div>
+      <div id="interactTipDoor" class="interact-tip" hidden>Pressione <b>E</b> para <b>finalizar o dia</b></div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card card--events" aria-labelledby="eventsTitle">
+        <header class="card__header card__header--events">
+          <h2 id="eventsTitle">Eventos</h2>
+          <div class="stat__label">🏁 <span id="eventsProgress">0/3</span></div>
+        </header>
+        <div class="card__body card__body--tight" id="eventsContainer"></div>
+      </section>
+
+      <section class="card" aria-labelledby="debtsTitle">
+        <header class="card__header"><h2 id="debtsTitle">Dívidas</h2></header>
+        <div class="card__body">
+          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <button class="btn tab is-active" data-filter="todas" aria-selected="true">Todas</button>
+            <button class="btn tab" data-filter="a_pagar" aria-selected="false">A pagar</button>
+            <button class="btn tab" data-filter="atrasadas" aria-selected="false">Atrasadas</button>
+            <button class="btn tab" data-filter="pagas" aria-selected="false">Pagas</button>
+          </div>
+          <div class="list list--scroll" id="debtsList" aria-live="polite"></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <!-- Regras -->
+  <dialog id="rulesModal" class="modal--themed" aria-labelledby="rulesTitle" aria-modal="true">
+    <div class="modal__content">
+      <div class="card__header"><h2 id="rulesTitle">Regras</h2></div>
+      <div class="card__body">
+        <ul>
+          <li>O jogador pode se locomover utilizando as <b>setas do teclado</b>.</li>
+          <li>Aperte <b>E</b> para interagir com o <b>carro</b> e com a <b>garagem</b>.</li>
+          <li>O jogador precisa <b>pagar todas as dívidas antes que finalize os 30 dias</b>.</li>
+          <li>Ao interagir com o carro de corrida ele pode <b>trabalhar no conserto</b>, mas <b>utilizando energia</b>.</li>
+          <li>Se a <b>energia chegar a 0</b> o jogo reinicia.</li>
+          <li>Se o jogador atingir o valor de <b>−R$ 500,00</b> o jogo reinicia.</li>
+          <li>Os <b>eventos</b> podem ser utilizados para <b>conseguir mais energia</b>, mas <b>gastam dinheiro</b>.</li>
+          <li><b>3 eventos por dia (obrigatórios)</b>; o dia <b>só avança pela porta</b>.</li>
+          <li><b>Reparos</b> não contam como evento (<b>máx. 2/dia</b>).</li>
+          <li>Juros: <b>3%/dia</b> em dívidas atrasadas.</li>
+          <li>Vitória: pagar todas as melhorias <b>até o dia 30</b>.</li>
+        </ul>
+        <div class="modal-footer"><button class="btn" onclick="document.getElementById('rulesModal').close()">Fechar</button></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Carro (Reparos) -->
+  <dialog id="carModal" class="modal--themed" aria-labelledby="carTitle" aria-modal="true">
+    <div class="modal__content">
+      <div class="card__header"><h2 id="carTitle">Carro na baia 🏎️</h2></div>
+      <div class="card__body">
+        <p class="repairs-info" id="repairsInfo">Reparos usados hoje: 0/2</p>
+        <div class="modal-actions">
+          <button id="carInspectBtn" class="btn">Inspeção rápida — <b>+R$ 90</b> · −1⚡</button>
+          <button id="carRepairBtn" class="btn">Reparo geral — <b>+R$ 140</b> · −2⚡</button>
+        </div>
+        <div class="modal-footer"><button id="carCloseBtn" class="btn">Fechar</button></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Porta (Finalizar dia) -->
+  <dialog id="doorModal" class="modal--themed" aria-labelledby="doorTitle" aria-modal="true">
+    <div class="modal__content">
+      <div class="card__header"><h2 id="doorTitle">Porta da garagem 🚪</h2></div>
+      <div class="card__body" id="doorBody"></div>
+      <div class="card__body">
+        <div class="modal-footer">
+          <button id="doorCloseBtn" class="btn">Cancelar</button>
+          <button id="doorConfirmBtn" class="btn btn--primary" disabled>Finalizar dia</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Fim de jogo -->
+  <dialog id="endModal" class="modal--themed" aria-labelledby="endTitle" aria-modal="true">
+    <div class="modal__content">
+      <div class="card__header"><h2 id="endTitle">Fim de jogo</h2></div>
+      <div class="card__body" id="endBody"></div>
+      <div class="card__body"><div class="modal-footer"><button id="restartBtn" class="btn btn--primary">Reiniciar</button></div></div>
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
