@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garagem F1 — RPG Pixel</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="hud pixel" role="banner">
+      <div class="brand" title="Garagem F1">🎮 Garagem F1</div>
+      <nav class="stats" aria-label="Indicadores">
+        <button id="tileDay" class="tile" title="Abrir calendário">
+          <span class="tile-ico">🗓️</span>
+          <span class="tile-main"><span id="day">1</span>/<span id="monthDays">30</span></span>
+          <span class="tile-sub">Dia</span>
+        </button>
+        <div class="tile" id="tileHumor" title="Seu humor (0 a 10)">
+          <span class="tile-ico">⚡</span>
+          <span class="tile-main"><span id="energia">5</span>/10</span>
+          <span class="tile-sub hearts" id="energiaBar" aria-label="barra de humor"></span>
+        </div>
+        <div class="tile" id="tileMoney" title="Seu dinheiro (saldo)">
+          <span class="tile-ico">💰</span>
+          <span class="tile-main" id="money">R$ 0,00</span>
+          <span class="tile-sub">Saldo</span>
+        </div>
+        <div class="tile" id="tileShifts" title="Turnos de hoje (usados/máximo)">
+          <span class="tile-ico">🕒</span>
+          <span class="tile-main"><span id="shiftsToday">0</span>/<span id="maxShiftsTop">2</span></span>
+          <span class="tile-sub">Turnos</span>
+        </div>
+        <div class="tile" id="tileEvents" title="Progresso dos eventos do dia">
+          <span class="tile-ico">📜</span>
+          <span class="tile-main" id="eventsChip">0/3</span>
+          <span class="tile-sub">Eventos</span>
+        </div>
+      </nav>
+      <div class="hud-actions">
+        <button id="btnNewGame" class="btn small" title="Reiniciar jogo">Novo Jogo</button>
+        <button id="btnSound" class="btn small ghost" title="Ativar/Desativar som">🔊 Som</button>
+        <button id="btnOpenRules" class="btn small ghost" title="Regras do jogo">📖 Regras</button>
+      </div>
+    </header>
+
+    <main class="layout" role="main">
+      <section class="room" aria-label="Sala do apartamento">
+        <div class="canvas-wrap crt">
+          <canvas id="game" aria-label="Canvas do jogo"></canvas>
+          <div id="bubble" class="bubble hidden"></div>
+          <div id="fx" class="fx hidden"></div>
+          <div id="dayTrans" class="day-trans hidden">
+            <div class="day-card pixel"><span id="dtText"></span></div>
+          </div>
+          <div class="vignette" aria-hidden="true"></div>
+          <div class="ui-floating" id="floatingInfo"></div>
+          <div class="legend">
+            <span>Setas: mover • <strong>E</strong>: interagir • Clique em <strong>🗓️</strong> para abrir o calendário</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="side" aria-label="Lateral: Eventos e Contas">
+        <div id="eventContainer" class="card pixel">
+          <h2>Eventos do Dia</h2>
+          <div id="eventText" class="event-text">Os eventos do dia são gerados automaticamente.</div>
+          <div id="choices" class="choices"></div>
+          <div id="eventsProgress" class="progress small"></div>
+        </div>
+
+        <div id="billsSide" class="card pixel">
+          <div class="side-header">
+            <h3>Contas</h3>
+            <div class="bill-filters" role="tablist" aria-label="Filtro de contas">
+              <button class="chip small active" data-filter="all" role="tab">Todas</button>
+              <button class="chip small" data-filter="due" role="tab">A vencer</button>
+              <button class="chip small" data-filter="late" role="tab">Em atraso</button>
+            </div>
+          </div>
+          <p class="small"><strong>Juros:</strong> padrão <strong>3%/dia</strong>; <span class="badge card">💳 Cartão 10%/dia</span>.</p>
+          <div id="billsListSide" class="list list-scroll"></div>
+        </div>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <!-- Modais -->
+    <div id="modalCalendar" class="modal hidden">
+      <div class="modal-content pixel">
+        <div class="modal-header">
+          <h3>Calendário</h3>
+          <button class="btn small ghost" data-close="#modalCalendar">Fechar</button>
+        </div>
+        <div id="calendarList" class="calendar-list"></div>
+      </div>
+    </div>
+
+    <div id="modalComputer" class="modal hidden">
+      <div class="modal-content pixel">
+        <div class="modal-header tabs">
+          <button class="tab active" data-tab="tabBills">Pagar Contas</button>
+          <button class="tab" data-tab="tabWork">Trabalhar</button>
+          <button class="tab" data-tab="tabJobs">Vagas</button>
+          <button class="btn small ghost right" data-close="#modalComputer">Fechar</button>
+        </div>
+        <div class="tab-content">
+          <div id="tabBills" class="tab-pane active">
+            <p>Quite as contas. Juros: padrão 3%/dia; <span class="badge card">💳 Cartão 10%/dia</span>.</p>
+            <div id="billsList" class="list"></div>
+          </div>
+          <div id="tabWork" class="tab-pane">
+            <p>Você pode fazer até <strong><span id="maxShifts">2</span></strong> turnos por dia.</p>
+            <div class="work-buttons">
+              <button class="btn" id="btnWorkFreela">Freela Rápido (+R$ 100, -1 Humor)</button>
+              <button class="btn" id="btnWorkBico">Bico Pesado (+R$ 160, -2 Humor)</button>
+            </div>
+            <div id="workInfo" class="small"></div>
+          </div>
+          <div id="tabJobs" class="tab-pane">
+            <p>Uma vaga por dia. Aceite para um pagamento único hoje.</p>
+            <div id="jobArea" class="card thin"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalRules" class="modal hidden">
+      <div class="modal-content pixel">
+        <div class="modal-header">
+          <h3>📖 Regras do Jogo</h3>
+          <button class="btn small ghost right" data-close="#modalRules">Fechar</button>
+        </div>
+        <div class="rules-body">
+          <ul>
+            <li>Mova-se com as setas (← ↑ → ↓) e interaja com <strong>E</strong>.</li>
+            <li>Resolva <strong>3 eventos</strong> por dia (gerados automaticamente).</li>
+            <li>Turnos: até <strong>2</strong> por dia. Algumas ações consomem 1 turno.</li>
+            <li><strong>Contas padrão</strong>: <strong>3% ao dia</strong>; <strong>Cartão (Parcel.)</strong>: <strong>10% ao dia</strong>.</li>
+            <li><strong>Cafeteira</strong>: +1 Humor (1x a cada 2 dias). <strong>Cama</strong>: avança o dia.</li>
+            <li>Perde se <strong>Humor</strong> chegar a 0 ou <strong>Dinheiro</strong> ≤ -500. Vence com <strong>Humor 10</strong> e <strong>Dinheiro positivo</strong> no fim do mês.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay hidden">
+      <div class="overlay-card pixel" id="overlayCard">
+        <h2 id="overlayTitle"></h2>
+        <p id="overlayMessage"></p>
+        <button id="btnRestart" class="btn">Jogar Novamente</button>
+      </div>
+    </div>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
